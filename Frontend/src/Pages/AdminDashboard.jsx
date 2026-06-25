@@ -420,7 +420,7 @@ const AdminDashboard = ({ inventory, artists, vaultKeys }) => {
                       {activeVaultKeys.map(key => (
                         <div key={key.key_hash} className="bg-black border border-neutral-800 p-3 flex justify-between items-center text-[10px] uppercase font-mono tracking-widest">
                           <span className="text-[#DC143C] font-bold w-16">SN: {key.serial_number}</span>
-                          <span className="text-neutral-400 select-all truncate mx-4 bg-neutral-900 px-2 py-1">localhost:5173/verify/{key.key_hash}</span>
+                          <span className="text-neutral-400 select-all truncate mx-4 bg-neutral-900 px-2 py-1">{window.location.origin}/verify/{key.key_hash}</span>
                           <span className={key.claimed_by ? "text-neutral-500" : "text-white"}>{key.claimed_by ? `CLAIMED: ${key.claimed_by}` : "UNCLAIMED"}</span>
                         </div>
                       ))}
