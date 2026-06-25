@@ -1,34 +1,24 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// Imported the Search icon here
 import { Filter, ArrowRight, Search } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
-// --- DUMMY DATA ---
-const catalogData = [
-  { id: '001', name: 'Genesis Tech Hoodie', price: '$245', category: 'Outerwear', drop: '01', status: 'Available', img: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=800&auto=format&fit=crop' },
-  { id: '002', name: 'Void Cargo Pants', price: '$185', category: 'Bottoms', drop: '01', status: 'Available', img: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd?q=80&w=800&auto=format&fit=crop' },
-  { id: '003', name: 'Cipher Heavy Tee', price: '$95', category: 'Tops', drop: '01', status: 'Sold Out', img: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=800&auto=format&fit=crop' },
-  { id: '004', name: 'Neon Track Jacket', price: '$265', category: 'Outerwear', drop: '02', status: 'Available', img: 'https://images.unsplash.com/photo-1520975954732-57dd22299614?q=80&w=800&auto=format&fit=crop' },
-  { id: '005', name: 'God of Hands Ring', price: '$120', category: 'Accessories', drop: '02', status: 'Available', img: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=800&auto=format&fit=crop' },
-  { id: '006', name: 'Master Cut Denim', price: '$210', category: 'Bottoms', drop: '02', status: 'Available', img: 'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=800&auto=format&fit=crop' },
-  { id: '007', name: 'Signature Longsleeve', price: '$110', category: 'Tops', drop: '01', status: 'Available', img: 'https://images.unsplash.com/photo-1618354691438-25af04aa3cada?q=80&w=800&auto=format&fit=crop' },
-  { id: '008', name: 'Abyss Tactical Vest', price: '$195', category: 'Outerwear', drop: '03', status: 'Coming Soon', img: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=800&auto=format&fit=crop' },
-];
-
 const filters = ['All', 'Outerwear', 'Tops', 'Bottoms', 'Accessories'];
 
-const Collection = () => {
+// ACCEPT THE LIVE DATABASE INVENTORY HERE
+const Collection = ({ inventory }) => {
   const [activeFilter, setActiveFilter] = useState('All');
-  // 1. ADDED STATE FOR SEARCH TERM
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 2. UPDATED LOGIC: Filter by BOTH category and search term
-  const filteredProducts = catalogData.filter((product) => {
+  // FILTER LOGIC NOW USES `inventory` INSTEAD OF `catalogData`
+  const filteredProducts = inventory.filter((product) => {
     const matchesCategory = activeFilter === 'All' || product.category === activeFilter;
-    const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      product.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Safety check: ensure product.name exists before checking .includes()
+    const matchesSearch = product.name 
+      ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        product.id.toLowerCase().includes(searchTerm.toLowerCase())
+      : false;
       
     return matchesCategory && matchesSearch;
   });
@@ -57,7 +47,7 @@ const Collection = () => {
 
           <div className="text-right flex flex-col items-end">
             <p className="font-mono text-xs text-neutral-500 uppercase tracking-widest mb-2">
-              Showing {filteredProducts.length} of {catalogData.length} Assets
+              Showing {filteredProducts.length} of {inventory.length} Assets
             </p>
             <div className="flex items-center gap-2 text-[#DC143C] font-black text-sm uppercase tracking-widest">
               <Filter size={16} /> Filter Protocol
@@ -68,7 +58,6 @@ const Collection = () => {
         {/* --- TOOLS BAR (Filters + Search) --- */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-12">
           
-          {/* Brutalist Filter Bar */}
           <div className="flex flex-wrap gap-4">
             {filters.map((filter) => (
               <button
@@ -85,7 +74,6 @@ const Collection = () => {
             ))}
           </div>
 
-          {/* 3. NEW SEARCH BAR COMPONENT */}
           <div className="relative w-full xl:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-[#DC143C] transition-colors" size={16} />
             <input
@@ -95,12 +83,11 @@ const Collection = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-black border border-white/20 text-white pl-12 pr-4 py-3 font-mono text-[10px] tracking-widest outline-none focus:border-[#DC143C] transition-colors uppercase placeholder:text-neutral-600"
             />
-            {/* Animated Bottom Border Accent */}
             <div className="absolute bottom-0 left-0 h-[2px] bg-[#DC143C] transition-all duration-300 w-0 group-focus-within:w-full"></div>
           </div>
         </div>
 
-        {/* Product Grid with Framer Motion Animations */}
+        {/* Product Grid */}
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <AnimatePresence>
             {filteredProducts.map((product) => (
@@ -116,7 +103,7 @@ const Collection = () => {
                 {/* Image Frame */}
                 <div className="relative aspect-[4/5] bg-neutral-900 border border-neutral-800 overflow-hidden mb-4 group-hover:border-[#DC143C] transition-colors duration-500">
                   <img 
-                    src={product.img} 
+                    src={product.img || "https://images.unsplash.com/photo-1618354691438-25af04aa3cada?q=80&w=800&auto=format&fit=crop"} 
                     alt={product.name} 
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                   />
@@ -124,9 +111,9 @@ const Collection = () => {
                   {/* Status Badges */}
                   <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-20">
                     <span className="font-mono text-[9px] tracking-widest bg-black/80 px-2 py-1 uppercase text-neutral-300 border border-white/10">
-                      DRP // {product.drop}
+                      DRP // {product.drop || '01'}
                     </span>
-                    {product.status !== 'Available' && (
+                    {product.status && product.status !== 'Available' && (
                       <span className="font-black text-[9px] tracking-widest bg-[#DC143C] text-white px-2 py-1 uppercase">
                         {product.status}
                       </span>
@@ -157,7 +144,7 @@ const Collection = () => {
           </AnimatePresence>
         </motion.div>
 
-        {/* Empty State (If search or filter has no products) */}
+        {/* Empty State */}
         {filteredProducts.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }} 
@@ -165,7 +152,7 @@ const Collection = () => {
             className="w-full py-24 flex flex-col items-center justify-center border border-dashed border-neutral-800 text-neutral-500 font-mono text-xs uppercase tracking-widest"
           >
             <Search className="mb-4 opacity-50" size={32} />
-            No assets found matching parameters.
+            DATABASE EMPTY. NO ASSETS FOUND.
           </motion.div>
         )}
 
