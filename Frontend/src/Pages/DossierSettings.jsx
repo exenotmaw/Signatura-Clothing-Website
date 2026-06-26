@@ -335,11 +335,20 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
                   />
                 </div>
 
+                {/* INJECTED TURNSTILE WIDGET */}
+                <div className="flex justify-center my-2">
+                  <Turnstile 
+                    siteKey={import.meta.env.VITE_CLOUDFLARE_SITE_KEY} 
+                    onSuccess={(token) => setCaptchaToken(token)}
+                    options={{ theme: 'dark' }}
+                  />
+                </div>
+
                 <div className="flex gap-4 mt-4">
-                  <button type="button" onClick={() => setSecurityModal({ isOpen: false, type: null, data: null })} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setSecurityModal({ isOpen: false, type: null, data: null }); setCaptchaToken(null); }} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
                     Abort
                   </button>
-                  <button type="submit" disabled={isProcessing} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50">
+                  <button type="submit" disabled={isProcessing || !captchaToken} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {isProcessing ? 'Verifying...' : 'Execute'}
                   </button>
                 </div>
