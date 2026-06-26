@@ -181,7 +181,11 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
         const { error } = await supabase.from('vault_keys').update({ claimed_by: null }).eq('key_hash', keyHash);
         if (error) throw new Error("DATABASE FAILED TO SEVER BINDING.");
         
-        setVaultKeys(prev => prev.map(k => k.key_hash === keyHash ? { ...k, claimed_by: null } : k));
+        if (typeof setVaultKeys === 'function') {
+          setVaultKeys(prev => prev.map(k => k.key_hash === keyHash ? { ...k, claimed_by: null } : k));
+        } else {
+          window.location.reload();
+        }
         setSuccessMsg(`SUCCESS: ${assetName} RELEASED TO GLOBAL POOL.`);
       } 
       
