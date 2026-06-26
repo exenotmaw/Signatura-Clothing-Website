@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Turnstile } from '@marsidev/react-turnstile'; // [NEW] Added Turnstile Import
 
 const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vaultKeys, setVaultKeys }) => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
   const [securityModal, setSecurityModal] = useState({ isOpen: false, type: null, data: null });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [modalError, setModalError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState(null); // [NEW] Added Captcha State
 
   const availableClothing = [...new Set(inventory.map(item => item.name).filter(name => name && name.trim() !== ''))];
   const myAssets = vaultKeys.filter(k => k.claimed_by === currentOperative?.nickname);
@@ -88,7 +90,7 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
       }
 
       const payload = {
-        nickname: form.nickname.trim(), // Ensure clean strings
+        nickname: form.nickname.trim(), 
         favoriteClothing: form.favoriteClothing,
         favoriteColorHex: form.favoriteColorHex,
         signature: form.signature
@@ -98,14 +100,9 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
         payload.last_updated = new Date().toISOString();
       }
 
-      // 1. Update the Main Dossier
       const { data, error } = await supabase.from('operatives').update(payload).eq('id', currentOperative.id).select();
       if (error) throw new Error("DATABASE SYNC FAILED.");
 
-      // ==========================================
-      // [NEW] 2. VAULT KEY SYNC PROTOCOL
-      // ==========================================
-      // If the alias changed, hunt down all keys owned by the old alias and update them to the new one.
       if (isNicknameChanged) {
         const { error: vaultError } = await supabase.from('vault_keys')
           .update({ claimed_by: form.nickname.trim() })
@@ -113,8 +110,7 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
           
         if (vaultError) throw new Error("FAILED TO SYNC VAULT KEYS WITH NEW ALIAS.");
         
-        // If you are using React Query or local state to store vaultKeys, update the UI instantly
-        if (setVaultKeys) {
+        if (typeof setVaultKeys === 'function') {
             setVaultKeys(prev => prev.map(k => k.claimed_by === currentOperative.nickname ? { ...k, claimed_by: form.nickname.trim() } : k));
         }
       }
@@ -134,11 +130,6 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
     setIsProcessing(false);
   };
 
-  // ==========================================
-  // DESTRUCTIVE ACTION HANDLERS
-  // ==========================================
-  
-  // 1. Trigger the Modal instead of window.confirm
   const initiateUnbind = (keyHash, serialNum, assetName) => {
     setSecurityModal({ isOpen: true, type: 'unbind', data: { keyHash, serialNum, assetName } });
     setConfirmPassword('');
@@ -151,49 +142,44 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
     setModalError('');
   };
 
-  // 2. Process the Password Verification
   const executeDestructiveAction = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
     setModalError('');
 
     try {
-      // First: Verify their password against Supabase Auth
+      // [NEW] Added Captcha Token to the Supabase authentication request
       const { data: { user } } = await supabase.auth.getUser();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: confirmPassword
+        password: confirmPassword,
+        options: {
+          captchaToken: captchaToken,
+        }
       });
 
       if (authError) {
         throw new Error("INVALID CIPHER. ACCESS DENIED.");
       }
 
-      // Second: If Cipher is correct, execute the requested action
       if (securityModal.type === 'unbind') {
-        const { keyHash, assetName } = securityModal.data;
+        const { keyHash } = securityModal.data;
         const { error } = await supabase.from('vault_keys').update({ claimed_by: null }).eq('key_hash', keyHash);
         if (error) throw new Error("DATABASE FAILED TO SEVER BINDING.");
         
-        setVaultKeys(prev => prev.map(k => k.key_hash === keyHash ? { ...k, claimed_by: null } : k));
-        setSuccessMsg(`SUCCESS: ${assetName} RELEASED TO GLOBAL POOL.`);
+        // [NEW] Safe refresh to prevent React state crashing
+        window.location.reload();
       } 
       
       else if (securityModal.type === 'delete') {
-        // Release all bound assets first
         await supabase.from('vault_keys').update({ claimed_by: null }).eq('claimed_by', currentOperative.nickname);
-        // Delete dossier profile
         await supabase.from('operatives').delete().eq('id', currentOperative.id);
-        // Purge session
         await supabase.auth.signOut(); 
         setCurrentOperative(null);
         alert("DOSSIER TERMINATED.");
-        navigate('/');
-        return; // Exit completely
+        window.location.href = '/'; 
+        return; 
       }
-
-      // Close modal on success
-      setSecurityModal({ isOpen: false, type: null, data: null });
 
     } catch (err) {
       setModalError(err.message);
@@ -329,11 +315,22 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
                   />
                 </div>
 
+                {/* [NEW] INJECTED TURNSTILE WIDGET */}
+                <div className="flex justify-center my-2">
+                  <Turnstile 
+                    siteKey={import.meta.env.VITE_CLOUDFLARE_SITE_KEY} 
+                    onSuccess={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken(null)}
+                    options={{ theme: 'dark' }}
+                  />
+                </div>
+
                 <div className="flex gap-4 mt-4">
-                  <button type="button" onClick={() => setSecurityModal({ isOpen: false, type: null, data: null })} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setSecurityModal({ isOpen: false, type: null, data: null }); setCaptchaToken(null); }} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
                     Abort
                   </button>
-                  <button type="submit" disabled={isProcessing} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50">
+                  {/* [NEW] Button locked until CAPTCHA token exists */}
+                  <button type="submit" disabled={isProcessing || !captchaToken} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {isProcessing ? 'Verifying...' : 'Execute'}
                   </button>
                 </div>
