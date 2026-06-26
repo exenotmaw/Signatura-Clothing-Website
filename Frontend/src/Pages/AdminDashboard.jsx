@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { Turnstile } from '@marsidev/react-turnstile'; 
 import { useQueryClient } from '@tanstack/react-query'; 
 
-const AdminDashboard = ({ currentOperative, inventory, vaultKeys, setVaultKeys }) => {
+const AdminDashboard = ({ currentOperative, inventory, vaultKeys }) => {
   const queryClient = useQueryClient(); 
 
   // ==========================================
