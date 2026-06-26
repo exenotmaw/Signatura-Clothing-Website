@@ -139,7 +139,11 @@ const SignaturaCore = () => {
           <Route path="/operatives" element={<Operatives inventory={inventory} />} /> 
           <Route path="/ledger" element={<LimitedLedger inventory={inventory} vaultKeys={vaultKeys} />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/admin" element={<AdminDashboard currentOperative={currentOperative} vaultKeys={vaultKeys} />} />
+          
+          {/* Note: Admin dashboard might need manual setInventory overrides depending on your specific edit logic, but the cache handles the initial load beautifully */}
+          <Route path="/admin" element={<AdminDashboard inventory={inventory} artists={artists} vaultKeys={vaultKeys} />} />
+          
+          {/* Route Guards applied */}
           <Route path="/auth" element={currentOperative ? <Navigate to="/" replace /> : <AuthTerminal inventory={inventory} setCurrentOperative={setCurrentOperative} />} />
           <Route path="/verify/:secureHash" element={<VerifyTerminal inventory={inventory} currentOperative={currentOperative} />} />
           <Route path="/settings" element={<DossierSettings inventory={inventory} currentOperative={currentOperative} setCurrentOperative={setCurrentOperative} vaultKeys={vaultKeys} />} />

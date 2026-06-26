@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Turnstile } from '@marsidev/react-turnstile';
 
 const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vaultKeys, setVaultKeys }) => {
   const navigate = useNavigate();
@@ -17,7 +16,6 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
   
   const [canUpdateRestricted, setCanUpdateRestricted] = useState(true);
   const [daysLeft, setDaysLeft] = useState(0);
-  const [captchaToken, setCaptchaToken] = useState(null);
 
   // ==========================================
   // DESTRUCTIVE ACTION SECURITY MODAL STATES
@@ -164,15 +162,11 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
       const { data: { user } } = await supabase.auth.getUser();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: confirmPassword,
-        options: {
-          captchaToken: captchaToken,
-        }
+        password: confirmPassword
       });
 
       if (authError) {
-        console.error("SUPABASE REJECTION DATA:", authError);
-        throw new Error(`SYSTEM HALT: ${authError.message}`);
+        throw new Error("INVALID CIPHER. ACCESS DENIED.");
       }
 
       // Second: If Cipher is correct, execute the requested action
@@ -181,8 +175,9 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
         const { error } = await supabase.from('vault_keys').update({ claimed_by: null }).eq('key_hash', keyHash);
         if (error) throw new Error("DATABASE FAILED TO SEVER BINDING.");
         
-        window.location.reload();
-   }
+        setVaultKeys(prev => prev.map(k => k.key_hash === keyHash ? { ...k, claimed_by: null } : k));
+        setSuccessMsg(`SUCCESS: ${assetName} RELEASED TO GLOBAL POOL.`);
+      } 
       
       else if (securityModal.type === 'delete') {
         // Release all bound assets first
@@ -334,20 +329,11 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
                   />
                 </div>
 
-                {/* INJECTED TURNSTILE WIDGET */}
-                <div className="flex justify-center my-2">
-                  <Turnstile 
-                    siteKey={import.meta.env.VITE_CLOUDFLARE_SITE_KEY} 
-                    onSuccess={(token) => setCaptchaToken(token)}
-                    options={{ theme: 'dark' }}
-                  />
-                </div>
-
                 <div className="flex gap-4 mt-4">
-                  <button type="button" onClick={() => { setSecurityModal({ isOpen: false, type: null, data: null }); setCaptchaToken(null); }} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
+                  <button type="button" onClick={() => setSecurityModal({ isOpen: false, type: null, data: null })} className="flex-1 border border-neutral-700 text-neutral-400 text-xs py-3 uppercase hover:text-white transition-colors">
                     Abort
                   </button>
-                  <button type="submit" disabled={isProcessing || !captchaToken} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button type="submit" disabled={isProcessing} className="flex-1 bg-[#DC143C] text-black font-black text-xs py-3 uppercase hover:bg-white transition-colors disabled:opacity-50">
                     {isProcessing ? 'Verifying...' : 'Execute'}
                   </button>
                 </div>
