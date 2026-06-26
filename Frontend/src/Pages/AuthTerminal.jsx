@@ -168,8 +168,8 @@ const AuthTerminal = ({ inventory, setCurrentOperative }) => {
         <div className="text-center mb-8 border-b border-neutral-800 pb-6">
           <p className="text-[#DC143C] text-[10px] tracking-[0.3em] uppercase mb-2 font-bold">Signatura Network</p>
           <h1 className="text-3xl font-black uppercase tracking-tighter">
-            {authMode === 'login' && 'Operative Login'}
-            {authMode === 'signup' && 'Initialize Dossier'}
+            {authMode === 'login' && 'Login Account'}
+            {authMode === 'signup' && 'Create Account'}
             {authMode === 'awaiting' && 'Awaiting Verification'}
           </h1>
         </div>
@@ -268,14 +268,14 @@ const AuthTerminal = ({ inventory, setCurrentOperative }) => {
               disabled={isProcessing || !captchaToken} 
               className="w-full mt-4 bg-[#DC143C] text-black font-black py-4 hover:bg-white transition-colors disabled:opacity-50 tracking-[0.2em]"
             >
-              {isProcessing ? 'PROCESSING...' : (authMode === 'login' ? 'INITIATE HANDSHAKE' : 'SUBMIT DOSSIER')}
+              {isProcessing ? 'PROCESSING...' : (authMode === 'login' ? 'LOG IN' : 'SUBMIT ACCOUNT')}
             </button>
           </form>
         )}
 
         {authMode !== 'awaiting' && (
           <div className="mt-6 text-center text-[10px] text-neutral-500 tracking-widest border-t border-neutral-800 pt-4">
-            {authMode === 'login' ? "NO DOSSIER FOUND? " : "DOSSIER ALREADY REGISTERED? "}
+            {authMode === 'login' ? "NO ACCOUNT FOUND? " : "ALREADY REGISTERED? "}
             <button 
               onClick={() => { 
                 setAuthMode(authMode === 'login' ? 'signup' : 'login'); 
