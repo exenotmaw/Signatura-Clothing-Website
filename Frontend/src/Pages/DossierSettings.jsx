@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vaultKeys, setVaultKeys }) => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
   
   const [canUpdateRestricted, setCanUpdateRestricted] = useState(true);
   const [daysLeft, setDaysLeft] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   // ==========================================
   // DESTRUCTIVE ACTION SECURITY MODAL STATES
@@ -162,7 +164,10 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
       const { data: { user } } = await supabase.auth.getUser();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: confirmPassword
+        password: confirmPassword,
+        options: {
+          captchaToken: captchaToken,
+        }
       });
 
       if (authError) {
