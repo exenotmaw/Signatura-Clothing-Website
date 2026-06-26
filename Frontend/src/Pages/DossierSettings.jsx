@@ -166,7 +166,8 @@ const DossierSettings = ({ inventory, currentOperative, setCurrentOperative, vau
       });
 
       if (authError) {
-        throw new Error("INVALID CIPHER. ACCESS DENIED.");
+        console.error("SUPABASE REJECTION DATA:", authError);
+        throw new Error(`SYSTEM HALT: ${authError.message}`);
       }
 
       // Second: If Cipher is correct, execute the requested action
